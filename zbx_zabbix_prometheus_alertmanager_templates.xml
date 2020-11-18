@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<zabbix_export>
+    <version>5.0</version>
+    <date>2020-11-18T19:52:08Z</date>
+    <groups>
+        <group>
+            <name>Prometheus</name>
+        </group>
+    </groups>
+    <templates>
+        <template>
+            <template>Prometheus Alertmanager</template>
+            <name>Prometheus Alertmanager</name>
+            <groups>
+                <group>
+                    <name>Prometheus</name>
+                </group>
+            </groups>
+            <applications>
+                <application>
+                    <name>Alertmanager</name>
+                </application>
+            </applications>
+            <items>
+                <item>
+                    <name>Get Prometheus Alerts</name>
+                    <type>HTTP_AGENT</type>
+                    <key>prom.alerts</key>
+                    <history>0</history>
+                    <trends>0</trends>
+                    <value_type>TEXT</value_type>
+                    <applications>
+                        <application>
+                            <name>Alertmanager</name>
+                        </application>
+                    </applications>
+                    <url>http://{HOST.IP}:{$PROM_PORT}/api/v1/alerts</url>
+                </item>
+                <item>
+                    <name>Prometheus Alerts status HTTP API</name>
+                    <type>DEPENDENT</type>
+                    <key>prom.alerts.status.http</key>
+                    <delay>0</delay>
+                    <applications>
+                        <application>
+                            <name>Alertmanager</name>
+                        </application>
+                    </applications>
+                    <valuemap>
+                        <name>Service state</name>
+                    </valuemap>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.status</params>
+                        </step>
+                        <step>
+                            <type>JAVASCRIPT</type>
+                            <params>if (value == &quot;success&quot;)
+	return 1
+else
+	return 0</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>prom.alerts</key>
+                    </master_item>
+                    <triggers>
+                        <trigger>
+                            <expression>{nodata(1m)}=1</expression>
+                            <name>Prometheus Alerts /api/v1/alerts not success</name>
+                            <priority>HIGH</priority>
+                        </trigger>
+                    </triggers>
+                </item>
+            </items>
+            <discovery_rules>
+                <discovery_rule>
+                    <name>Prometheus Alerts Discovery</name>
+                    <type>DEPENDENT</type>
+                    <key>prom.alerts.discovery</key>
+                    <delay>0</delay>
+                    <item_prototypes>
+                        <item_prototype>
+                            <name>{#INFO}</name>
+                            <type>DEPENDENT</type>
+                            <key>prom.alerts[{#ALERTNAME}{#JOB}{#INSTANCE}]</key>
+                            <delay>0</delay>
+                            <trends>0</trends>
+                            <value_type>TEXT</value_type>
+                            <applications>
+                                <application>
+                                    <name>Alertmanager</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.data.alerts..[?(@.alertname == '{#ALERTNAME}' &amp;&amp; @.job == '{#JOB}' &amp;&amp; @.instance == '{#INSTANCE}')].severity.first()</params>
+                                    <error_handler>CUSTOM_VALUE</error_handler>
+                                    <error_handler_params>0</error_handler_params>
+                                </step>
+                                <step>
+                                    <type>DISCARD_UNCHANGED</type>
+                                    <params/>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>prom.alerts</key>
+                            </master_item>
+                        </item_prototype>
+                    </item_prototypes>
+                    <trigger_prototypes>
+                        <trigger_prototype>
+                            <expression>{Prometheus Alertmanager:prom.alerts[{#ALERTNAME}{#JOB}{#INSTANCE}].last()}=&quot;average&quot;</expression>
+                            <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
+                            <recovery_expression>{Prometheus Alertmanager:prom.alerts[{#ALERTNAME}{#JOB}{#INSTANCE}].last()}=&quot;0&quot; and {Prometheus Alertmanager:prom.alerts.status.http.last(1m)}=1</recovery_expression>
+                            <name>{#INFO}</name>
+                            <priority>AVERAGE</priority>
+                            <tags>
+                                <tag>
+                                    <tag>Alert Name</tag>
+                                    <value>{#ALERTNAME}</value>
+                                </tag>
+                                <tag>
+                                    <tag>Instance</tag>
+                                    <value>{#INSTANCE}</value>
+                                </tag>
+                                <tag>
+                                    <tag>Job</tag>
+                                    <value>{#JOB}</value>
+                                </tag>
+                            </tags>
+                        </trigger_prototype>
+                        <trigger_prototype>
+                            <expression>{Prometheus Alertmanager:prom.alerts[{#ALERTNAME}{#JOB}{#INSTANCE}].last()}=&quot;disaster&quot;</expression>
+                            <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
+                            <recovery_expression>{Prometheus Alertmanager:prom.alerts[{#ALERTNAME}{#JOB}{#INSTANCE}].last()}=&quot;0&quot; and {Prometheus Alertmanager:prom.alerts.status.http.last(1m)}=1</recovery_expression>
+                            <name>{#INFO}</name>
+                            <priority>DISASTER</priority>
+                            <tags>
+                                <tag>
+                                    <tag>Alert Name</tag>
+                                    <value>{#ALERTNAME}</value>
+                                </tag>
+                                <tag>
+                                    <tag>Instance</tag>
+                                    <value>{#INSTANCE}</value>
+                                </tag>
+                                <tag>
+                                    <tag>Job</tag>
+                                    <value>{#JOB}</value>
+                                </tag>
+                            </tags>
+                        </trigger_prototype>
+                        <trigger_prototype>
+                            <expression>{Prometheus Alertmanager:prom.alerts[{#ALERTNAME}{#JOB}{#INSTANCE}].last()}=&quot;high&quot;</expression>
+                            <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
+                            <recovery_expression>{Prometheus Alertmanager:prom.alerts[{#ALERTNAME}{#JOB}{#INSTANCE}].last()}=&quot;0&quot; and {Prometheus Alertmanager:prom.alerts.status.http.last(1m)}=1</recovery_expression>
+                            <name>{#INFO}</name>
+                            <priority>HIGH</priority>
+                            <tags>
+                                <tag>
+                                    <tag>Alert Name</tag>
+                                    <value>{#ALERTNAME}</value>
+                                </tag>
+                                <tag>
+                                    <tag>Instance</tag>
+                                    <value>{#INSTANCE}</value>
+                                </tag>
+                                <tag>
+                                    <tag>Job</tag>
+                                    <value>{#JOB}</value>
+                                </tag>
+                            </tags>
+                        </trigger_prototype>
+                        <trigger_prototype>
+                            <expression>{Prometheus Alertmanager:prom.alerts[{#ALERTNAME}{#JOB}{#INSTANCE}].last()}=&quot;information&quot;</expression>
+                            <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
+                            <recovery_expression>{Prometheus Alertmanager:prom.alerts[{#ALERTNAME}{#JOB}{#INSTANCE}].last()}=&quot;0&quot; and {Prometheus Alertmanager:prom.alerts.status.http.last(1m)}=1</recovery_expression>
+                            <name>{#INFO}</name>
+                            <priority>INFO</priority>
+                            <tags>
+                                <tag>
+                                    <tag>Alert Name</tag>
+                                    <value>{#ALERTNAME}</value>
+                                </tag>
+                                <tag>
+                                    <tag>Instance</tag>
+                                    <value>{#INSTANCE}</value>
+                                </tag>
+                                <tag>
+                                    <tag>Job</tag>
+                                    <value>{#JOB}</value>
+                                </tag>
+                            </tags>
+                        </trigger_prototype>
+                        <trigger_prototype>
+                            <expression>{Prometheus Alertmanager:prom.alerts[{#ALERTNAME}{#JOB}{#INSTANCE}].last()}=&quot;warning&quot;</expression>
+                            <recovery_mode>RECOVERY_EXPRESSION</recovery_mode>
+                            <recovery_expression>{Prometheus Alertmanager:prom.alerts[{#ALERTNAME}{#JOB}{#INSTANCE}].last()}=&quot;0&quot; and {Prometheus Alertmanager:prom.alerts.status.http.last(1m)}=1</recovery_expression>
+                            <name>{#INFO}</name>
+                            <priority>WARNING</priority>
+                            <tags>
+                                <tag>
+                                    <tag>Alert Name</tag>
+                                    <value>{#ALERTNAME}</value>
+                                </tag>
+                                <tag>
+                                    <tag>Instance</tag>
+                                    <value>{#INSTANCE}</value>
+                                </tag>
+                                <tag>
+                                    <tag>Job</tag>
+                                    <value>{#JOB}</value>
+                                </tag>
+                            </tags>
+                        </trigger_prototype>
+                    </trigger_prototypes>
+                    <master_item>
+                        <key>prom.alerts</key>
+                    </master_item>
+                    <lld_macro_paths>
+                        <lld_macro_path>
+                            <lld_macro>{#ALERTNAME}</lld_macro>
+                            <path>$.labels.alertname</path>
+                        </lld_macro_path>
+                        <lld_macro_path>
+                            <lld_macro>{#INFO}</lld_macro>
+                            <path>$.annotations.summary</path>
+                        </lld_macro_path>
+                        <lld_macro_path>
+                            <lld_macro>{#INSTANCE}</lld_macro>
+                            <path>$.labels.instance</path>
+                        </lld_macro_path>
+                        <lld_macro_path>
+                            <lld_macro>{#JOB}</lld_macro>
+                            <path>$.labels.job</path>
+                        </lld_macro_path>
+                    </lld_macro_paths>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.data.alerts</params>
+                        </step>
+                    </preprocessing>
+                </discovery_rule>
+            </discovery_rules>
+            <macros>
+                <macro>
+                    <macro>{$PROM_PORT}</macro>
+                    <value>9090</value>
+                    <description>Porta de acesso ao Prometheus</description>
+                </macro>
+            </macros>
+        </template>
+    </templates>
+    <value_maps>
+        <value_map>
+            <name>Service state</name>
+            <mappings>
+                <mapping>
+                    <value>0</value>
+                    <newvalue>Down</newvalue>
+                </mapping>
+                <mapping>
+                    <value>1</value>
+                    <newvalue>Up</newvalue>
+                </mapping>
+            </mappings>
+        </value_map>
+    </value_maps>
+</zabbix_export>
